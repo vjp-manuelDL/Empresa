@@ -1,0 +1,11 @@
+# Archivos de Python y Django
+__pycache__/
+*.pyc
+db.sqlite3
+
+# Archivos de Node y Next.js
+node_modules/
+.next/
+
+# Configuraciones locales
+.env
