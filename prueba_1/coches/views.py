@@ -156,3 +156,33 @@ def actualizar_coche(request, coche_id):
             return JsonResponse({'error': str(e)}, status=500)
             
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+# --------------------------------------------------------------------------
+# VISTA 5: DETALLE COCHE (GET)
+# --------------------------------------------------------------------------
+def detalle_coche(request, coche_id):
+    """
+    Esta función devuelve los datos de UN SOLO coche específico.
+    Se usa cuando el usuario hace clic en un coche para ver su detalle.
+    """
+    if request.method == 'GET':
+        try:
+            # 1. Buscamos el coche por su ID (pk)
+            coche_obj = coche.objects.get(pk=coche_id)
+            
+            # 2. Devolvemos los datos en formato JSON
+            return JsonResponse({
+                'id': coche_obj.pk,
+                'marca': coche_obj.marca,
+                'color': coche_obj.color,
+                'precio': coche_obj.precio
+            })
+            
+        except coche.DoesNotExist:
+            # Si no existe, devolvemos error 404
+            return JsonResponse({'error': 'Coche no encontrado'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+            
+    return JsonResponse({'error': 'Método no permitido'}, status=405)

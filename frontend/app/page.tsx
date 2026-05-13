@@ -9,6 +9,9 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import CocheSkeleton from "../components/CocheSkeleton";
+import toast from "react-hot-toast";
+
 // Componente optimizado de Next.js para gestionar imágenes
 // (lazy loading, formatos modernos, etc.)
 
@@ -31,6 +34,9 @@ interface Coche {
 // COMPONENTE PRINCIPAL
 // ------------------------------------------------------------------
 export default function Home() {
+  // ← AÑADIDO: URL base de la API desde variable de entorno
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
   // [SECCIÓN 1] ESTADOS GLOBALES DE LA VISTA
   // 'coches': Almacena el array de objetos que traemos de la base de datos.
   // 'loading': Controla si se debe mostrar el mensaje de "Cargando...".
@@ -56,9 +62,7 @@ export default function Home() {
 
   // [SECCIÓN 3] ESTADOS DE CONTROL DE UI
   // 'enviando': Desactiva el botón mientras se procesa la petición.
-  // 'mensaje': Almacena el texto de feedback para el usuario.
   const [enviando, setEnviando] = useState(false);
-  const [mensaje, setMensaje] = useState("");
 
   // ------------------------------------------------------------------
   // [LÓGICA] FILTRAR Y ORDENAR COCHES
@@ -120,13 +124,12 @@ export default function Home() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setEnviando(true);
-    setMensaje("");
 
     try {
-      // Determinamos ruta y método dinámicamente según el modo
+      // ← CORREGIDO: Usamos API_URL en lugar de URL hardcodeada
       const url = editandoId
-        ? `http://localhost:8000/api/coches/actualizar/${editandoId}/`
-        : "http://localhost:8000/api/coches/crear/";
+        ? `${API_URL}/api/coches/actualizar/${editandoId}/`
+        : `${API_URL}/api/coches/crear/`;
 
       const method = editandoId ? "PUT" : "POST";
 
@@ -149,11 +152,11 @@ export default function Home() {
             prev.map((c) => (c.id === editandoId ? datos.coche : c)),
           );
           setEditandoId(null);
-          setMensaje("Coche actualizado con éxito");
+          toast.success("Coche actualizado con éxito");
         } else {
           // MODO CREACIÓN: Añadimos el nuevo coche al final de la lista
           setCoches((prev) => [...prev, datos.coche]);
-          setMensaje("Coche creado con éxito");
+          toast.success("Coche creado con éxito");
         }
 
         // Limpiamos el formulario y reseteamos estados
@@ -161,11 +164,11 @@ export default function Home() {
         setcolor("");
         setprecio("");
       } else {
-        setMensaje(datos.error || "Error al guardar el coche");
+        toast.error(datos.error || "Error al guardar el coche");
       }
     } catch (error) {
       console.error("Error de red:", error);
-      setMensaje("Error de red al guardar el coche");
+      toast.error("Error de red al guardar el coche");
     } finally {
       setEnviando(false);
     }
@@ -184,8 +187,9 @@ export default function Home() {
     }
 
     try {
+      // ← CORREGIDO: Usamos API_URL en lugar de URL hardcodeada
       const respuesta = await fetch(
-        `http://localhost:8000/api/coches/eliminar/${cocheId}/`,
+        `${API_URL}/api/coches/eliminar/${cocheId}/`,
         {
           method: "DELETE",
         },
@@ -194,13 +198,13 @@ export default function Home() {
       if (respuesta.ok) {
         // Filtramos la lista local para quitar el coche eliminado
         setCoches((prev) => prev.filter((coche) => coche.id !== cocheId));
-        setMensaje("Coche eliminado con éxito");
+        toast.success("Coche eliminado con éxito");
       } else {
-        alert("Error al eliminar el coche");
+        toast.error("Error al eliminar el coche");
       }
     } catch (error) {
       console.error("Error de red:", error);
-      alert("Error de red al eliminar el coche");
+      toast.error("Error de red al eliminar el coche");
     }
   };
 
@@ -212,7 +216,8 @@ export default function Home() {
    * El array vacío [] significa: "Ejecuta esto SOLO UNA VEZ".
    */
   useEffect(() => {
-    fetch("http://localhost:8000/api/coches/")
+    // ← CORREGIDO: Usamos API_URL en lugar de URL hardcodeada
+    fetch(`${API_URL}/api/coches/`)
       .then((response) => response.json())
       .then((data) => {
         setCoches(data.coches);
@@ -222,14 +227,14 @@ export default function Home() {
         console.error("Error al cargar la lista:", error);
         setLoading(false);
       });
-  }, []);
+  }, [API_URL]);
 
   // ------------------------------------------------------------------
   // [SECCIÓN 6] INTERFAZ VISUAL (JSX)
   // ------------------------------------------------------------------
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black min-h-screen p-6">
-      <main className="w-full max-w-3xl bg-white dark:bg-zinc-900 rounded-2xl shadow-xl p-8">
+    <div className="flex flex-col min-h-screen bg-zinc-50 font-sans dark:bg-black">
+      <main className="w-full px-6 py-10 md:px-12 lg:px-20">
         {/* LOGO Y TÍTULO PRINCIPAL */}
         <Image
           className="mx-auto dark:invert mb-4"
@@ -239,7 +244,7 @@ export default function Home() {
           height={120}
           priority
         />
-        <h1 className="text-3xl font-bold text-center text-zinc-900 dark:text-white mb-8">
+        <h1 className="text-3xl font-bold text-center text-zinc-900 dark:text-green-400 mb-8">
           Tienda de Coches
         </h1>
 
@@ -249,9 +254,9 @@ export default function Home() {
             href="/contacto"
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium 
                        text-blue-600 hover:text-yellow-500 
-                       dark:text-blue-400 dark:hover:text-yellow-300 
-                       border border-blue-600 dark:border-blue-400 
-                       rounded-lg hover:bg-blue-50 dark:hover:bg-purple-400
+                       dark:text-green-500 dark:hover:text-green-300 
+                       border border-blue-600 dark:border-green-700 
+                       rounded-lg hover:bg-blue-50 dark:hover:bg-green-900/20
                        transition"
           >
             <svg
@@ -275,10 +280,10 @@ export default function Home() {
         {/* FORMULARIO DINÁMICO (Crear / Editar) */}
         <form
           onSubmit={handleSubmit}
-          className="mb-8 p-6 border rounded-xl bg-zinc-100 dark:bg-zinc-800"
+          className="mb-8 p-6 border rounded-xl bg-zinc-100 dark:bg-zinc-900 dark:border-green-900"
         >
           {/* Título que cambia según el modo */}
-          <h2 className="text-lg font-semibold mb-4 text-zinc-800 dark:text-zinc-200">
+          <h2 className="text-lg font-semibold mb-4 text-zinc-800 dark:text-green-400">
             {editandoId
               ? `Editando coche ID: ${editandoId}`
               : "Añadir nuevo coche"}
@@ -292,7 +297,7 @@ export default function Home() {
               value={marca}
               onChange={(e) => setmarca(e.target.value)}
               required
-              className="p-3 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="p-3 rounded-lg border border-zinc-300 dark:border-green-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-green-400 placeholder-zinc-400 dark:placeholder-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
             />
             <input
               type="text"
@@ -300,7 +305,7 @@ export default function Home() {
               value={color}
               onChange={(e) => setcolor(e.target.value)}
               required
-              className="p-3 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="p-3 rounded-lg border border-zinc-300 dark:border-green-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-green-400 placeholder-zinc-400 dark:placeholder-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
             />
             <input
               type="number"
@@ -309,11 +314,11 @@ export default function Home() {
               onChange={(e) => setprecio(e.target.value)}
               required
               step="0.01"
-              className="p-3 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="p-3 rounded-lg border border-zinc-300 dark:border-green-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-green-400 placeholder-zinc-400 dark:placeholder-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
 
-          {/* Botón con texto dinámico */}
+          {/* Botón con texto dinámico (ACCIÓN - mantiene color azul para destacar) */}
           <button
             type="submit"
             disabled={enviando}
@@ -325,17 +330,10 @@ export default function Home() {
                 ? "Actualizar Coche"
                 : "Añadir Coche"}
           </button>
-
-          {/* Mensaje de feedback */}
-          {mensaje && (
-            <p className="mt-3 text-center font-medium text-zinc-700 dark:text-zinc-300">
-              {mensaje}
-            </p>
-          )}
         </form>
 
         {/* LISTA DE COCHES DISPONIBLES */}
-        <h2 className="text-xl font-semibold mb-4 text-zinc-800 dark:text-zinc-200">
+        <h2 className="text-xl font-semibold mb-4 text-zinc-800 dark:text-green-400">
           Coches disponibles
         </h2>
 
@@ -346,13 +344,13 @@ export default function Home() {
             placeholder="Buscar por Marca"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full p-3 pl-10 rounded-lg border border-zinc-300 dark:border-green-500
-               bg-white dark:bg-zinc-800 text-zinc-800 dark:text-green-500 
+            className="w-full p-3 pl-10 rounded-lg border border-zinc-300 dark:border-green-800
+               bg-white dark:bg-zinc-800 text-zinc-900 dark:text-green-400 placeholder-zinc-400 dark:placeholder-green-700
                focus:outline-none focus:ring-2 focus:ring-green-500 transition"
           />
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-green-400"
+            className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400 dark:text-green-600"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -378,8 +376,8 @@ export default function Home() {
               value={precioMin}
               onChange={(e) => setPrecioMin(e.target.value)}
               step="0.01"
-              className="w-full p-3 rounded-lg border border-zinc-300 dark:border-green-500
-                bg-white dark:bg-zinc-800 text-zinc-800 dark:text-green-500 
+              className="w-full p-3 rounded-lg border border-zinc-300 dark:border-green-800
+                bg-white dark:bg-zinc-800 text-zinc-900 dark:text-green-400 placeholder-zinc-400 dark:placeholder-green-700
                 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
             />
           </div>
@@ -393,8 +391,8 @@ export default function Home() {
               value={precioMax}
               onChange={(e) => setPrecioMax(e.target.value)}
               step="0.01"
-              className="w-full p-3 rounded-lg border border-zinc-300 dark:border-green-500
-                bg-white dark:bg-zinc-800 text-zinc-800 dark:text-green-500 
+              className="w-full p-3 rounded-lg border border-zinc-300 dark:border-green-800
+                bg-white dark:bg-zinc-800 text-zinc-900 dark:text-green-400 placeholder-zinc-400 dark:placeholder-green-700
                 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
             />
           </div>
@@ -408,8 +406,8 @@ export default function Home() {
           <select
             value={orden}
             onChange={(e) => setOrden(e.target.value as "asc" | "desc")}
-            className="w-full p-3 rounded-lg border border-zinc-300 dark:border-green-500 
-               bg-white dark:bg-zinc-800 text-zinc-900 dark:text-green-500 
+            className="w-full p-3 rounded-lg border border-zinc-300 dark:border-green-800 
+               bg-white dark:bg-zinc-800 text-zinc-900 dark:text-green-400
                focus:outline-none focus:ring-2 focus:ring-green-500 transition"
           >
             <option value="asc">Menor a Mayor</option>
@@ -427,7 +425,7 @@ export default function Home() {
               setPrecioMax("");
               setOrden("asc");
             }}
-            className="mb-6 w-full bg-green-500 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition"
+            className="mb-6 w-full bg-zinc-500 hover:bg-zinc-600 dark:bg-green-700 dark:hover:bg-green-600 text-white font-bold py-3 rounded-lg transition"
           >
             Limpiar Filtros
           </button>
@@ -435,19 +433,26 @@ export default function Home() {
 
         {/* LISTA DE RESULTADOS */}
         {loading ? (
-          <p className="text-center text-zinc-500 py-8">Cargando coches...</p>
+          // Mientras carga, mostramos 4 skeletons en la misma grid que los coches reales
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <CocheSkeleton />
+            <CocheSkeleton />
+            <CocheSkeleton />
+            <CocheSkeleton />
+          </div>
         ) : cochesFiltrados.length === 0 ? (
-          <p className="text-center text-zinc-800 py-8 dark:text-red-500">
+          <p className="text-center text-zinc-800 dark:text-green-500 py-8">
             No hay coches disponibles.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {cochesFiltrados.map((coche) => (
-              <div
+              <Link
                 key={coche.id}
-                className="p-4 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-100 dark:bg-zinc-800 shadow-sm hover:shadow-md transition relative"
+                href={`/coche/${coche.id}`}
+                className="block p-4 border border-zinc-200 dark:border-green-900 rounded-lg bg-zinc-100 dark:bg-zinc-900 shadow-sm hover:shadow-md transition relative cursor-pointer"
               >
-                {/* Botón Editar */}
+                {/* Botón Editar (ACCIÓN - azul para destacar) */}
                 <button
                   onClick={() => prepararEdicion(coche)}
                   className="absolute top-3 left-3 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-1 px-3 rounded transition"
@@ -455,7 +460,7 @@ export default function Home() {
                   Editar
                 </button>
 
-                {/* Botón Eliminar */}
+                {/* Botón Eliminar (ACCIÓN - rojo para destacar como acción destructiva) */}
                 <button
                   onClick={() => handleEliminar(coche.id)}
                   className="absolute top-3 right-3 bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-1 px-3 rounded transition"
@@ -463,29 +468,29 @@ export default function Home() {
                   Eliminar
                 </button>
 
-                {/* Información del coche */}
-                <h3 className="font-bold text-lg text-zinc-900 dark:text-white px-8 text-center">
+                {/* Información del coche (texto verde en dark mode) */}
+                <h3 className="font-bold text-lg text-zinc-900 dark:text-green-400 px-8 text-center">
                   {coche.marca}
                 </h3>
 
-                <p className="text-zinc-600 dark:text-orange-400 text-center">
+                <p className="text-zinc-600 dark:text-green-500 text-center">
                   Color: {coche.color}
                 </p>
 
                 <p className="text-green-600 dark:text-green-400 font-semibold mt-2 text-center">
                   {coche.precio} €
                 </p>
-              </div>
+              </Link>
             ))}
           </div>
         )}
 
         {/* SECCIÓN: MAPA DE UBICACIÓN */}
-        <div className="mt-8 pt-8 border-t border-zinc-200 dark:border-zinc-700">
-          <h2 className="text-2xl font-bold text-center text-zinc-900 dark:text-pink-500 mb-6">
+        <div className="mt-8 pt-8 border-t border-zinc-200 dark:border-green-900">
+          <h2 className="text-2xl font-bold text-center text-zinc-900 dark:text-green-400 mb-6">
             Nuestra Ubicación
           </h2>
-          <div className="w-full h-80 rounded-xl overflow-hidden shadow-lg border border-zinc-200 dark:border-zinc-700">
+          <div className="w-full h-80 rounded-xl overflow-hidden shadow-lg border border-zinc-200 dark:border-green-900">
             <iframe
               src="https://maps.google.com/maps?q=40.029889,-6.090175&hl=es&z=17&output=embed"
               width="100%"

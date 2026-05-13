@@ -240,8 +240,8 @@ export default function ContactoPage() {
   // [SECCIÓN 3] INTERFAZ VISUAL (JSX con Tailwind CSS)
   // ------------------------------------------------------------------
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black min-h-screen p-6">
-      <main className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-2xl shadow-xl p-8">
+    <div className="flex flex-col min-h-screen bg-zinc-50 font-sans dark:bg-black ">
+      <main className="w-full px-6 py-10 md:px-12 lg:px-20 dark:bg-zinc-700">
         {/* CABECERA: Título y enlace de vuelta a la página principal */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">
