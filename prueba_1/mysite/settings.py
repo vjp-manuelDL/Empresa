@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework_simplejwt',
     'corsheaders', # añado corsheaders a la lista de apps 
     'coches', # añado la app coches a la lista de apps instaladas
 ]
@@ -137,3 +139,17 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # CORS (Permitir peticiones desde el frontend)
 CORS_ALLOW_ALL_ORIGINS = True 
+
+# Configuración de REST Framework
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+# Configuración de JWT (opcional, para definir tiempo de expiración)
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+}
