@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os #importamos os para manejar las rutas de los archivos de imagenes
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -121,4 +122,18 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 # Añade+imos esto al final del archivo para permitir el acceso desde cualquier origen
+CORS_ALLOW_ALL_ORIGINS = True 
+
+
+# ------------------------------------------------------------------
+# CONFIGURACIÓN DE MEDIA (IMÁGENES SUBIDAS POR USUARIOS)
+# ------------------------------------------------------------------
+
+# URL pública para acceder a los archivos multimedia
+MEDIA_URL = '/media/'
+
+# Ruta física en el disco donde se guardarán los archivos
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# CORS (Permitir peticiones desde el frontend)
 CORS_ALLOW_ALL_ORIGINS = True 

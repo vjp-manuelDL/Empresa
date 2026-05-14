@@ -23,7 +23,8 @@ from coches.views import actualizar_coche
 from coches.views import detalle_coche # <--- IMPORTANTE: Importar la vista de detalle
  # importo la vista actualizar coche
 
-
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -39,3 +40,7 @@ urlpatterns = [
     path('api/coches/eliminar/<int:coche_id>/', eliminar_coche, name='eliminar_coche'), 
     path('api/coches/actualizar/<int:coche_id>/', actualizar_coche, name='actualizar_coche'), 
 ]
+
+# ESTO ES NECESARIO PARA QUE LAS IMÁGENES SUBIDAS SEAN ACCESIBLES DESDE EL NAVEGADOR
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

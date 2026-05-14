@@ -1,11 +1,6 @@
 # IMPORTACIONES NECESARIAS
-# JsonResponse: Para devolver respuestas en formato JSON al Frontend.
-# coche: El modelo de base de datos que definimos en models.py.
-# json: Para convertir el texto que recibimos del Frontend en diccionarios Python.
-# csrf_exempt: Permite que peticiones externas (como tu Next.js en puerto 3000) 
-#              accedan a Django sin ser bloqueadas por seguridad CSRF.
 from django.http import JsonResponse
-from .models import coche
+from .models import coche, ImagenCoche # Importamos el modelo de imágenes
 import json
 from django.views.decorators.csrf import csrf_exempt
 
@@ -14,54 +9,52 @@ from django.views.decorators.csrf import csrf_exempt
 # --------------------------------------------------------------------------
 def lista_coches_web(request):
     """
-    Esta función devuelve TODOS los coches de la base de datos.
-    Se usa cuando el usuario entra a la web y debe ver la lista inicial.
+    Devuelve TODOS los coches de la base de datos.
     """
-    # 1. Obtenemos todos los objetos del modelo 'coche'.
-    # 2. Usamos .values(...) para obtener solo los campos que nos interesan como diccionarios.
-    # 3. list(...) convierte el resultado en una lista normal de Python.
     coches_lista = list(coche.objects.values('id', 'marca', 'color', 'precio'))
-    
-    # 4. Devolvemos la lista envuelta en un diccionario con la clave 'coches'.
     return JsonResponse({'coches': coches_lista})
 
 # --------------------------------------------------------------------------
-# VISTA 2: CREAR COCHE (POST)
+# VISTA 2: CREAR COCHE (POST) - SOPORTA IMÁGENES
 # --------------------------------------------------------------------------
 @csrf_exempt
 def crear_coche(request):
     """
-    Esta función recibe datos nuevos y guarda un coche en la base de datos.
-    Solo acepta métodos POST (enviar datos).
+    Crea un nuevo coche y sus imágenes asociadas desde FormData.
     """
     if request.method == 'POST':
         try:
-            # 1. Cargamos los datos crudos (raw) que vienen del body de la petición
-            datos = json.loads(request.body)
+            # Obtenemos los campos de texto desde request.POST (FormData)
+            marca = request.POST.get('marca')
+            color = request.POST.get('color')
+            precio_raw = request.POST.get('precio')
             
-            marca = datos.get('marca')
-            color = datos.get('color')
-            precio_raw = datos.get('precio')
-            
-            # 2. Validación básica: Si falta algún dato esencial, devolvemos error 400
-            if not marca or not color or precio_raw is None:
+            if not all([marca, color, precio_raw]):
                 return JsonResponse({'error': 'Faltan campos requeridos'}, status=400)
                 
-            # 3. Convertimos el precio a número decimal (float)
             precio_final = float(precio_raw)
             
-            # 4. Creamos la instancia del objeto coche en memoria
+            # 1. Crear el coche
             nuevo = coche(marca=marca, color=color, precio=precio_final)
-            
-            # 5. Guardamos en la base de datos SQLite
             nuevo.save()
 
-            # 6. Respondemos con éxito (Status 201 = Creado)
-            # NOTA: Usamos .pk (Primary Key) en lugar de .id para evitar errores de análisis estático.
+            # 2. Procesar las imágenes subidas (request.FILES contiene los archivos)
+            imagenes = request.FILES.getlist('imagenes')
+                        # --- LOGS DE DIAGNÓSTICO ---
+            print(f"--- DEBUG CREAR COCHE ---")
+            print(f"Claves en request.FILES: {request.FILES.keys()}")
+            print(f"Número de imágenes recibidas en getlist('imagenes'): {len(imagenes)}")
+            for i, img in enumerate(imagenes):
+                print(f"Imagen {i+1}: Nombre={img.name}, Tamaño={img.size}")
+            print(f"-------------------------")
+            # -----------------------------
+            for imagen in imagenes:
+                ImagenCoche.objects.create(coches=nuevo, imagen=imagen)
+
             return JsonResponse({
                 'mensaje': 'Coche creado exitosamente',
                 'coche': {
-                    'id': nuevo.pk,       # Usamos pk porque es equivalente a id pero más seguro en Django
+                    'id': nuevo.pk,
                     'marca': nuevo.marca,
                     'color': nuevo.color,
                     'precio': nuevo.precio
@@ -81,22 +74,14 @@ def crear_coche(request):
 @csrf_exempt
 def eliminar_coche(request, coche_id):
     """
-    Esta función borra un coche específico de la base de datos.
-    Recibe el ID del coche a través de la URL (ej: /eliminar/5/).
+    Borra un coche específico y sus imágenes asociadas (gracias a on_delete=CASCADE).
     """
     if request.method == 'DELETE':
         try:
-            # 1. Buscamos el coche en la base de datos por su ID
             coche_eliminar = coche.objects.get(pk=coche_id)
-            
-            # 2. Borramos el objeto
             coche_eliminar.delete()
-            
-            # 3. Respondemos éxito (Status 200)
             return JsonResponse({'mensaje': 'Coche eliminado exitosamente'}, status=200)
-            
         except coche.DoesNotExist:
-            # Si el ID no existe en la base de datos
             return JsonResponse({'error': 'Coche no encontrado'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
@@ -104,42 +89,55 @@ def eliminar_coche(request, coche_id):
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 # --------------------------------------------------------------------------
-# VISTA 4: ACTUALIZAR COCHE (PUT / PATCH)
+# VISTA 4: ACTUALIZAR COCHE (AHORA ACEPTA POST TAMBIÉN)
 # --------------------------------------------------------------------------
 @csrf_exempt
 def actualizar_coche(request, coche_id):
     """
-    Esta función modifica un coche existente.
-    Acepta PUT (actualización completa) o PATCH (actualización parcial).
+    Modifica un coche existente. Acepta POST para compatibilidad con FormData/Archivos.
     """
-    if request.method in ['PUT', 'PATCH']:
+    # CAMBIO AQUÍ: Añadimos 'POST' a la lista de métodos permitidos
+    if request.method in ['PUT', 'PATCH', 'POST']: 
         try:
-            # 1. Cargamos los datos nuevos que envía el Frontend
-            datos = json.loads(request.body)
+            # --- LOGS DE DIAGNÓSTICO PARA VER SI LLEGAN LOS ARCHIVOS ---
+            print(f"--- DEBUG ACTUALIZAR COCHE {coche_id} ---")
+            print(f"Método recibido: {request.method}")
+            print(f"Claves en request.POST: {list(request.POST.keys())}")
+            print(f"Claves en request.FILES: {list(request.FILES.keys())}")
             
-            # 2. Buscamos el coche existente por su ID (pk)
+            nuevas_imagenes = request.FILES.getlist('imagenes')
+            print(f"Número de imágenes nuevas recibidas: {len(nuevas_imagenes)}")
+            for img in nuevas_imagenes:
+                print(f" - Imagen nueva: {img.name} ({img.size} bytes)")
+            print("---------------------------------")
+            # ---------------------------------------------------------
+
             coche_a_editar = coche.objects.get(pk=coche_id)
 
-            # 3. Actualizamos los campos SOLO si se enviaron en el JSON
-            # IMPORTANTE: Verificamos 'marca' in datos (la clave del diccionario)
-            if 'marca' in datos:
-                coche_a_editar.marca = datos['marca']
-            
-            if 'color' in datos:
-                coche_a_editar.color = datos['color']
-            
-            if 'precio' in datos:
-                # Convertimos el precio a float antes de guardar
-                coche_a_editar.precio = float(datos['precio'])
+            # 1. Actualizar campos de texto
+            if 'marca' in request.POST:
+                coche_a_editar.marca = request.POST['marca']
+            if 'color' in request.POST:
+                coche_a_editar.color = request.POST['color']
+            if 'precio' in request.POST:
+                coche_a_editar.precio = float(request.POST['precio'])
 
-            # 4. Guardamos los cambios en la base de datos
             coche_a_editar.save()
 
-            # 5. Respondemos con el objeto actualizado (Status 200)
+            # 2. Borrar imágenes marcadas
+            ids_a_borrar = request.POST.getlist('imagenes_a_borrar')
+            if ids_a_borrar:
+                ImagenCoche.objects.filter(id__in=ids_a_borrar, coches=coche_a_editar).delete()
+
+            # 3. Añadir nuevas imágenes
+            # Ahora esto SÍ funcionará porque usamos POST y Django llena request.FILES
+            for imagen in nuevas_imagenes:
+                ImagenCoche.objects.create(coches=coche_a_editar, imagen=imagen)
+
             return JsonResponse({
                 'mensaje': 'Coche actualizado exitosamente',
                 'coche': {
-                    'id': coche_a_editar.pk,       # Usamos pk en lugar de .id
+                    'id': coche_a_editar.pk,
                     'marca': coche_a_editar.marca,
                     'color': coche_a_editar.color,
                     'precio': coche_a_editar.precio
@@ -148,39 +146,43 @@ def actualizar_coche(request, coche_id):
 
         except coche.DoesNotExist:
             return JsonResponse({'error': 'Coche no encontrado'}, status=404)
-        except ValueError:
-            return JsonResponse({'error': 'Precio debe ser un número válido'}, status=400)
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'JSON malformado'}, status=400)
         except Exception as e:
+            print(f"ERROR CRÍTICO EN ACTUALIZAR: {str(e)}")
             return JsonResponse({'error': str(e)}, status=500)
             
     return JsonResponse({'error': 'Método no permitido'}, status=405)
-
-
 # --------------------------------------------------------------------------
-# VISTA 5: DETALLE COCHE (GET)
+# VISTA 5: DETALLE COCHE (GET) - DEVUELVE IMÁGENES CON ID
 # --------------------------------------------------------------------------
 def detalle_coche(request, coche_id):
     """
-    Esta función devuelve los datos de UN SOLO coche específico.
-    Se usa cuando el usuario hace clic en un coche para ver su detalle.
+    Devuelve los datos de UN SOLO coche específico, incluyendo sus imágenes.
+    IMPORTANTE: Devuelve el ID de cada imagen para permitir su borrado individual.
     """
     if request.method == 'GET':
         try:
-            # 1. Buscamos el coche por su ID (pk)
-            coche_obj = coche.objects.get(pk=coche_id)
+            # Usamos prefetch_related para cargar las imágenes eficientemente
+            coche_obj = coche.objects.prefetch_related('imagenes').get(pk=coche_id)
             
-            # 2. Devolvemos los datos en formato JSON
+            imagenes_qs = coche_obj.imagenes.all()  # type: ignore[attr-defined]
+            
+            lista_imagenes = []
+            for img in imagenes_qs:
+                # AQUI EL CAMBIO: Devolvemos un diccionario con id y url
+                lista_imagenes.append({
+                    'id': img.id,
+                    'url': request.build_absolute_uri(img.imagen.url)
+                })
+
             return JsonResponse({
                 'id': coche_obj.pk,
                 'marca': coche_obj.marca,
                 'color': coche_obj.color,
-                'precio': coche_obj.precio
+                'precio': float(coche_obj.precio),
+                'imagenes': lista_imagenes # Ahora es una lista de objetos {id, url}
             })
             
         except coche.DoesNotExist:
-            # Si no existe, devolvemos error 404
             return JsonResponse({'error': 'Coche no encontrado'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
