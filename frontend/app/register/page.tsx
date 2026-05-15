@@ -26,15 +26,8 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // Guardar usuario y su rol
-        localStorage.setItem("tienda_coches_user", data.username);
-        localStorage.setItem(
-          "tienda_coches_is_staff",
-          data.is_staff.toString(),
-        ); // "true" o "false"
-
-        toast.success(`Bienvenido, ${data.username}`);
-        router.push("/");
+        toast.success("Cuenta creada. Por favor, inicia sesión.");
+        router.push("/login");
       } else {
         toast.error(data.error || "Error al registrarse");
       }
@@ -60,9 +53,10 @@ export default function RegisterPage() {
             required
             className="w-full p-3 rounded-lg border border-zinc-300 dark:border-green-800 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-green-400"
           />
+          {/* CAMPO EMAIL OBLIGATORIO */}
           <input
             type="email"
-            placeholder="Correo electrónico"
+            placeholder="Correo electrónico "
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -74,6 +68,7 @@ export default function RegisterPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength={8}
             className="w-full p-3 rounded-lg border border-zinc-300 dark:border-green-800 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-green-400"
           />
           <button

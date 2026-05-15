@@ -2,8 +2,8 @@
 // ------------------------------------------------------------------
 // DIRECTIVA DE NEXT.JS
 // ------------------------------------------------------------------
-import { useState, useCallback } from "react"; // Eliminamos useEffect de auth, usamos lazy init
-import { useRouter } from "next/navigation"; // Importamos router para la redirección
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import CocheSkeleton from "../components/CocheSkeleton";
@@ -17,9 +17,9 @@ interface Coche {
   marca: string;
   color: string;
   precio: number;
+  main_image?: string | null; // URL de la primera imagen del coche
 }
 
-// Interfaz para las imágenes que vienen del backend (con ID y URL)
 interface ImagenDetalle {
   id: number;
   url: string;
@@ -29,15 +29,12 @@ interface ImagenDetalle {
 // COMPONENTE PRINCIPAL
 // ------------------------------------------------------------------
 export default function Home() {
-  const router = useRouter(); // Hook para navegación
+  const router = useRouter();
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   // ------------------------------------------------------------------
-  // [SECCIÓN 0] ESTADOS DE AUTENTICACIÓN Y ROLES (Sin useEffect)
+  // [SECCIÓN 0] ESTADOS DE AUTENTICACIÓN Y ROLES
   // ------------------------------------------------------------------
-
-  // Inicializamos los estados leyendo directamente de localStorage.
-  // Esto evita el warning "setState in effect" y es más eficiente.
   const [currentUser, setCurrentUser] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("tienda_coches_user") || "";
@@ -52,15 +49,12 @@ export default function Home() {
     return false;
   });
 
-  // Función para cerrar sesión y redirigir
   const handleLogout = () => {
     localStorage.removeItem("tienda_coches_user");
     localStorage.removeItem("tienda_coches_is_staff");
     setCurrentUser("");
     setIsAdmin(false);
     toast("Sesión cerrada correctamente");
-
-    // Redirigir al login inmediatamente
     router.push("/login");
   };
 
@@ -69,13 +63,9 @@ export default function Home() {
   // ------------------------------------------------------------------
   const [coches, setCoches] = useState<Coche[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Archivos nuevos seleccionados en el input file
   const [archivosImagenes, setArchivosImagenes] = useState<FileList | null>(
     null,
   );
-
-  // Estados para gestionar imágenes al EDITAR
   const [imagenesActuales, setImagenesActuales] = useState<ImagenDetalle[]>([]);
   const [idsABorrar, setIdsABorrar] = useState<number[]>([]);
 
@@ -111,26 +101,10 @@ export default function Home() {
   // ------------------------------------------------------------------
   // [EFECTO] CARGA INICIAL DE COCHES
   // ------------------------------------------------------------------
-  // Nota: Usamos un efecto simple aquí porque depende de una función asíncrona externa.
-  // La autenticación ya está resuelta arriba sin efectos.
-  useState(() => {
-    // Ejecutamos la carga inicial inmediatamente al montar usando un truco de estado inicial
-    // O podemos dejar el useEffect si preferimos claridad, añadiendo el disable comment
-    return null;
-  });
-
-  // Usamos useEffect estándar para la carga de datos asíncrona inicial
-  useState(() => {
-    // Pequeño hack para evitar el warning de eslint en la carga inicial simple
-    // Pero lo correcto es usar useEffect con la dependencia correcta
-    return null;
-  });
-
-  // Re-implementamos el useEffect para cargar coches, que es necesario para datos asíncronos
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useState(() => {
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     cargarCoches();
-  });
+  }, [cargarCoches]);
 
   // ------------------------------------------------------------------
   // [LÓGICA] FILTRAR Y ORDENAR
@@ -163,12 +137,9 @@ export default function Home() {
     setcolor(coche.color);
     setprecio(coche.precio.toString());
     setEditandoId(coche.id);
-
-    // Resetear estados de imágenes
     setArchivosImagenes(null);
     setIdsABorrar([]);
 
-    // Fetch para obtener las imágenes actuales (con IDs)
     try {
       const res = await fetch(`${API_URL}/api/coches/${coche.id}/`);
       const data = await res.json();
@@ -181,7 +152,6 @@ export default function Home() {
       console.error("Error cargando imágenes para editar:", error);
       setImagenesActuales([]);
     }
-
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -201,8 +171,6 @@ export default function Home() {
   // ------------------------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validación de máximo 4 fotos
     const numExistentes = imagenesActuales.length;
     const numBorradas = idsABorrar.length;
     const numNuevas = archivosImagenes ? archivosImagenes.length : 0;
@@ -216,7 +184,6 @@ export default function Home() {
     }
 
     setEnviando(true);
-
     try {
       const formData = new FormData();
       formData.append("marca", marca);
@@ -240,7 +207,7 @@ export default function Home() {
         : `${API_URL}/api/coches/crear/`;
 
       const respuesta = await fetch(url, {
-        method: "POST", // Usamos POST para compatibilidad con FormData en Django
+        method: "POST",
         body: formData,
       });
 
@@ -250,8 +217,6 @@ export default function Home() {
         toast.success(
           editandoId ? "Coche actualizado con éxito" : "Coche creado con éxito",
         );
-
-        // Limpiar campos básicos
         setmarca("");
         setcolor("");
         setprecio("");
@@ -263,10 +228,8 @@ export default function Home() {
         ) as HTMLInputElement;
         if (fileInput) fileInput.value = "";
 
-        // ¡IMPORTANTE! Recargamos la lista general de coches
         await cargarCoches();
 
-        // Si estábamos editando, volvemos a cargar los detalles de ESE coche para ver las fotos nuevas
         if (editandoId) {
           try {
             const resDetalle = await fetch(
@@ -282,7 +245,6 @@ export default function Home() {
             console.error("Error recargando detalles tras actualizar:", error);
           }
         } else {
-          // Si era creación, salimos del modo edición (por seguridad)
           setEditandoId(null);
           setImagenesActuales([]);
         }
@@ -302,13 +264,11 @@ export default function Home() {
   // ------------------------------------------------------------------
   const handleEliminar = async (cocheId: number) => {
     if (!confirm("¿Estás seguro de que quieres eliminar este coche?")) return;
-
     try {
       const respuesta = await fetch(
         `${API_URL}/api/coches/eliminar/${cocheId}/`,
         { method: "DELETE" },
       );
-
       if (respuesta.ok) {
         toast.success("Coche eliminado con éxito");
         await cargarCoches();
@@ -321,21 +281,10 @@ export default function Home() {
     }
   };
 
-  // Calculamos si debemos deshabilitar el input de archivos
   const fotosRestantes = editandoId
     ? imagenesActuales.length - idsABorrar.length
     : 0;
-
   const deshabilitarInputArchivos = Boolean(editandoId && fotosRestantes >= 4);
-
-  // ------------------------------------------------------------------
-  // CARGA INICIAL DE DATOS (Workaround para evitar warning complejo)
-  // ------------------------------------------------------------------
-  // Usamos un useEffect simple para la carga inicial de coches
-  useState(() => {
-    // Este bloque se ejecuta una vez al montar para iniciar la carga
-    cargarCoches();
-  });
 
   // ------------------------------------------------------------------
   // [RENDERIZADO] JSX
@@ -343,72 +292,8 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-zinc-50 font-sans dark:bg-black">
       <main className="w-full px-6 py-10 md:px-12 lg:px-20 relative">
-        {/* BOTÓN DE LOGIN / LOGOUT (Posicionado arriba a la derecha) */}
-        <div className="absolute top-4 right-4 md:right-10 z-50">
-          {currentUser ? ( // Usamos currentUser para verificar sesión
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 hidden sm:inline-block">
-                Hola, <strong>{currentUser}</strong> {isAdmin && "(Admin)"}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition shadow-md"
-              >
-                Cerrar Sesión
-              </button>
-            </div>
-          ) : (
-            <Link
-              href="/login"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition shadow-md"
-            >
-              Iniciar Sesión
-            </Link>
-          )}
-        </div>
-
-        {/* LOGO Y TÍTULO */}
-        <Image
-          className="mx-auto dark:invert mb-4"
-          src="/asds.jpg"
-          alt="Logo Coches"
-          width={120}
-          height={120}
-          priority
-        />
-        <h1 className="text-3xl font-bold text-center text-zinc-900 dark:text-green-400 mb-8">
-          Tienda de Coches
-        </h1>
-
-        {/* ENLACE CONTACTO */}
-        <div className="text-center mb-6">
-          <Link
-            href="/contacto"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-yellow-500 dark:text-green-500 dark:hover:text-green-300 border border-blue-600 dark:border-green-700 rounded-lg hover:bg-blue-50 dark:hover:bg-green-900/20 transition"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              />
-            </svg>
-            Contacto
-          </Link>
-        </div>
-
-        {/* ------------------------------------------------------------------
-            SECCIÓN DE ADMINISTRACIÓN (SOLO VISIBLE SI ES ADMIN)
-            ------------------------------------------------------------------ */}
+        {/* SECCIÓN DE ADMINISTRACIÓN (Solo visible para admins) */}
         {isAdmin ? (
-          /* FORMULARIO DE GESTIÓN (CREAR / EDITAR) */
           <form
             onSubmit={handleSubmit}
             className="mb-8 p-6 border rounded-xl bg-zinc-100 dark:bg-zinc-900 dark:border-green-900 shadow-lg"
@@ -418,8 +303,6 @@ export default function Home() {
                 ? `Editando coche ID: ${editandoId}`
                 : "Añadir nuevo coche"}
             </h2>
-
-            {/* Inputs Básicos */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
               <input
                 type="text"
@@ -448,13 +331,11 @@ export default function Home() {
               />
             </div>
 
-            {/* SECCIÓN DE GESTIÓN DE IMÁGENES */}
+            {/* GESTIÓN DE IMÁGENES */}
             <div className="mb-6 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-200 dark:border-zinc-700">
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                 Gestión de Fotos (Máximo 4 en total)
               </label>
-
-              {/* Input para subir NUEVAS fotos */}
               <input
                 type="file"
                 multiple
@@ -468,7 +349,6 @@ export default function Home() {
                 muestran abajo.
               </p>
 
-              {/* Vista previa de fotos EXISTENTES (Solo en modo Edición) */}
               {editandoId && imagenesActuales.length > 0 && (
                 <div className="mt-4">
                   <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-2">
@@ -488,7 +368,6 @@ export default function Home() {
                             alt="Foto existente"
                             className="w-20 h-20 object-cover rounded border border-zinc-300 dark:border-zinc-600 shadow-sm"
                           />
-                          {/* Botón X para marcar/desmarcar borrado */}
                           <button
                             type="button"
                             onClick={() => toggleBorrarImagen(img.id)}
@@ -508,7 +387,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Vista previa de fotos NUEVAS seleccionadas */}
               {archivosImagenes && archivosImagenes.length > 0 && (
                 <div className="mt-4">
                   <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-2">
@@ -530,7 +408,6 @@ export default function Home() {
               )}
             </div>
 
-            {/* Botón Submit */}
             <button
               type="submit"
               disabled={enviando}
@@ -544,24 +421,22 @@ export default function Home() {
             </button>
           </form>
         ) : (
-          /* MENSAJE PARA USUARIOS NO ADMIN (O NO LOGUEADOS) */
-          <div className="mb-8 p-6 text-center bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-green-900">
-            <p className="text-zinc-600 dark:text-zinc-400">
-              Bienvenido a nuestra tienda.{" "}
-              <Link
-                href="/login"
-                className="text-blue-600 hover:underline font-semibold"
-              >
-                Inicia sesión como Administrador
-              </Link>{" "}
-              para gestionar el inventario.
-            </p>
+          /* MENSAJE DE BIENVENIDA PARA USUARIOS */
+          <div className="mb-8 p-6 text-center bg-gradient-to-r from-zinc-100 to-zinc-50 dark:from-zinc-900 dark:to-zinc-800 rounded-xl border border-zinc-200 dark:border-green-900 shadow-sm">
+            <div className="max-w-2xl mx-auto">
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-green-400 mb-2">
+                ¡Bienvenido a Tienda de Coches!
+              </h2>
+              <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+                Explora nuestro catálogo de vehículos seleccionados. Encuentra
+                el coche perfecto para ti con nuestra búsqueda avanzada y
+                filtros por precio.
+              </p>
+            </div>
           </div>
         )}
 
-        {/* ------------------------------------------------------------------
-            LISTADO PÚBLICO (VISIBLE PARA TODOS)
-            ------------------------------------------------------------------ */}
+        {/* LISTADO PÚBLICO */}
         <h2 className="text-xl font-semibold mb-4 text-zinc-800 dark:text-green-400">
           Coches disponibles
         </h2>
@@ -652,7 +527,7 @@ export default function Home() {
           </button>
         )}
 
-        {/* Lista Resultados */}
+        {/* Lista Resultados CON IMÁGENES */}
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <CocheSkeleton />
@@ -670,8 +545,38 @@ export default function Home() {
               <Link
                 key={coche.id}
                 href={`/coche/${coche.id}`}
-                className="block p-4 border border-zinc-200 dark:border-green-900 rounded-lg bg-zinc-100 dark:bg-zinc-900 shadow-sm hover:shadow-md transition relative cursor-pointer"
+                className="block border border-zinc-200 dark:border-green-900 rounded-lg bg-zinc-100 dark:bg-zinc-900 shadow-sm hover:shadow-md transition relative cursor-pointer overflow-hidden"
               >
+                {/* IMAGEN PRINCIPAL DEL COCHE */}
+                <div className="relative w-full h-48 bg-zinc-200 dark:bg-zinc-800">
+                  {coche.main_image ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={`${API_URL}${coche.main_image}`}
+                      alt={coche.marca}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    /* Placeholder si no hay imagen */
+                    <div className="w-full h-full flex items-center justify-center text-zinc-400 dark:text-zinc-600">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-16 w-16"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+
                 {/* BOTONES DE GESTIÓN (Solo visibles si ES ADMIN) */}
                 {isAdmin && (
                   <>
@@ -696,15 +601,18 @@ export default function Home() {
                   </>
                 )}
 
-                <h3 className="font-bold text-lg text-zinc-900 dark:text-green-400 px-8 text-center mt-2">
-                  {coche.marca}
-                </h3>
-                <p className="text-zinc-600 dark:text-green-500 text-center">
-                  Color: {coche.color}
-                </p>
-                <p className="text-green-600 dark:text-green-400 font-semibold mt-2 text-center">
-                  {coche.precio.toLocaleString("es-ES")} €
-                </p>
+                {/* INFORMACIÓN DEL COCHE */}
+                <div className="p-4">
+                  <h3 className="font-bold text-lg text-zinc-900 dark:text-green-400 text-center mb-2">
+                    {coche.marca}
+                  </h3>
+                  <p className="text-zinc-600 dark:text-green-500 text-center text-sm mb-2">
+                    Color: {coche.color}
+                  </p>
+                  <p className="text-green-600 dark:text-green-400 font-semibold text-center">
+                    {coche.precio.toLocaleString("es-ES")} €
+                  </p>
+                </div>
               </Link>
             ))}
           </div>

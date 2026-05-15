@@ -1,19 +1,29 @@
 # IMPORTACIONES NECESARIAS
 from django.http import JsonResponse
-from .models import coche, ImagenCoche # Importamos el modelo de imágenes
+from .models import coche, ImagenCoche  # Importamos el modelo de imágenes
+from .serializers import CocheSerializer  # Importamos el serializer para incluir la imagen principal
 import json
 from django.views.decorators.csrf import csrf_exempt
 
 
 # --------------------------------------------------------------------------
-# VISTA 1: LISTAR COCHES (GET)
+# VISTA 1: LISTAR COCHES (GET) - AHORA CON IMAGEN PRINCIPAL
 # --------------------------------------------------------------------------
 def lista_coches_web(request):
     """
-    Devuelve TODOS los coches de la base de datos.
+    Devuelve TODOS los coches de la base de datos con su imagen principal.
+    Usa CocheSerializer para incluir el campo 'main_image' en la respuesta.
     """
-    coches_lista = list(coche.objects.values('id', 'marca', 'color', 'precio'))
-    return JsonResponse({'coches': coches_lista})
+    # Usamos prefetch_related para cargar las imágenes en una sola consulta
+    # Esto evita el problema N+1 y mejora significativamente el rendimiento
+    coches_queryset = coche.objects.all().prefetch_related('imagenes')
+    
+    # Serializamos los datos usando nuestro serializer personalizado
+    # que incluye el campo 'main_image' con la URL de la primera foto
+    serializer = CocheSerializer(coches_queryset, many=True)
+    
+    return JsonResponse({'coches': serializer.data})
+
 
 # --------------------------------------------------------------------------
 # VISTA 2: CREAR COCHE (POST) - SOPORTA IMÁGENES
@@ -41,7 +51,8 @@ def crear_coche(request):
 
             # 2. Procesar las imágenes subidas (request.FILES contiene los archivos)
             imagenes = request.FILES.getlist('imagenes')
-                        # --- LOGS DE DIAGNÓSTICO ---
+            
+            # --- LOGS DE DIAGNÓSTICO ---
             print(f"--- DEBUG CREAR COCHE ---")
             print(f"Claves en request.FILES: {request.FILES.keys()}")
             print(f"Número de imágenes recibidas en getlist('imagenes'): {len(imagenes)}")
@@ -49,6 +60,7 @@ def crear_coche(request):
                 print(f"Imagen {i+1}: Nombre={img.name}, Tamaño={img.size}")
             print(f"-------------------------")
             # -----------------------------
+            
             for imagen in imagenes:
                 ImagenCoche.objects.create(coches=nuevo, imagen=imagen)
 
@@ -69,6 +81,7 @@ def crear_coche(request):
         
     return JsonResponse({'error': 'método no permitido'}, status=405)
 
+
 # --------------------------------------------------------------------------
 # VISTA 3: ELIMINAR COCHE (DELETE)
 # --------------------------------------------------------------------------
@@ -88,6 +101,7 @@ def eliminar_coche(request, coche_id):
             return JsonResponse({'error': str(e)}, status=500)
             
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
 
 # --------------------------------------------------------------------------
 # VISTA 4: ACTUALIZAR COCHE (AHORA ACEPTA POST TAMBIÉN)
@@ -152,6 +166,8 @@ def actualizar_coche(request, coche_id):
             return JsonResponse({'error': str(e)}, status=500)
             
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
 # --------------------------------------------------------------------------
 # VISTA 5: DETALLE COCHE (GET) - DEVUELVE IMÁGENES CON ID
 # --------------------------------------------------------------------------
@@ -180,7 +196,7 @@ def detalle_coche(request, coche_id):
                 'marca': coche_obj.marca,
                 'color': coche_obj.color,
                 'precio': float(coche_obj.precio),
-                'imagenes': lista_imagenes # Ahora es una lista de objetos {id, url}
+                'imagenes': lista_imagenes  # Ahora es una lista de objetos {id, url}
             })
             
         except coche.DoesNotExist:

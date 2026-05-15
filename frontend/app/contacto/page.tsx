@@ -240,22 +240,22 @@ export default function ContactoPage() {
   // [SECCIÓN 3] INTERFAZ VISUAL (JSX con Tailwind CSS)
   // ------------------------------------------------------------------
   return (
-    <div className="flex flex-col min-h-screen bg-zinc-50 font-sans dark:bg-black ">
-      <main className="w-full px-6 py-10 md:px-12 lg:px-20 dark:bg-zinc-700">
+    <div className="flex flex-col min-h-screen bg-zinc-50 font-sans dark:bg-black">
+      <main className="w-full px-6 py-10 md:px-12 lg:px-20">
         {/* CABECERA: Título y enlace de vuelta a la página principal */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-green-400">
             Contáctanos
           </h1>
           <Link
             href="/"
-            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition"
+            className="text-blue-600 hover:text-blue-700 dark:text-green-500 dark:hover:text-green-300 font-medium transition"
           >
             Volver a coches
           </Link>
         </div>
 
-        <p className="mb-6 text-zinc-600 dark:text-zinc-400">
+        <p className="mb-6 text-zinc-600 dark:text-green-400">
           ¿Tienes alguna pregunta o comentario? Envíanos un mensaje.
         </p>
 
@@ -264,8 +264,8 @@ export default function ContactoPage() {
           <div
             className={`mb-6 p-4 rounded-lg text-center font-medium ${
               feedback.success
-                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
             }`}
           >
             {feedback.message}
@@ -278,9 +278,9 @@ export default function ContactoPage() {
           <div>
             <label
               htmlFor="nombre"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+              className="block text-sm font-medium text-zinc-700 dark:text-green-400 mb-1"
             >
-              Nombre *
+              Nombre:
             </label>
             <input
               type="text"
@@ -288,10 +288,10 @@ export default function ContactoPage() {
               name="nombre"
               value={contacto.nombre}
               onChange={handleChange}
-              className={`w-full p-3 rounded-lg border bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 transition ${
+              className={`w-full p-3 rounded-lg border bg-white dark:bg-zinc-800 text-zinc-900 dark:text-green-400 focus:outline-none focus:ring-2 transition ${
                 errors.nombre
                   ? "border-red-500 focus:ring-red-500"
-                  : "border-zinc-300 dark:border-zinc-600 focus:ring-blue-500"
+                  : "border-zinc-300 dark:border-green-800 focus:ring-green-500"
               }`}
               placeholder="Tu nombre completo"
             />
@@ -306,9 +306,9 @@ export default function ContactoPage() {
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+              className="block text-sm font-medium text-zinc-700 dark:text-green-400 mb-1"
             >
-              Email *
+              Email:
             </label>
             <input
               type="email"
@@ -316,10 +316,10 @@ export default function ContactoPage() {
               name="email"
               value={contacto.email}
               onChange={handleChange}
-              className={`w-full p-3 rounded-lg border bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 transition ${
+              className={`w-full p-3 rounded-lg border bg-white dark:bg-zinc-800 text-zinc-900 dark:text-green-400 focus:outline-none focus:ring-2 transition ${
                 errors.email
                   ? "border-red-500 focus:ring-red-500"
-                  : "border-zinc-300 dark:border-zinc-600 focus:ring-blue-500"
+                  : "border-zinc-300 dark:border-green-800 focus:ring-green-500"
               }`}
               placeholder="tu@email.com"
             />
@@ -334,9 +334,9 @@ export default function ContactoPage() {
           <div>
             <label
               htmlFor="asunto"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+              className="block text-sm font-medium text-zinc-700 dark:text-green-400 mb-1"
             >
-              Asunto *
+              Asunto:
             </label>
             <input
               type="text"
@@ -344,10 +344,10 @@ export default function ContactoPage() {
               name="asunto"
               value={contacto.asunto}
               onChange={handleChange}
-              className={`w-full p-3 rounded-lg border bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 transition ${
+              className={`w-full p-3 rounded-lg border bg-white dark:bg-zinc-800 text-zinc-900 dark:text-green-400 focus:outline-none focus:ring-2 transition ${
                 errors.asunto
                   ? "border-red-500 focus:ring-red-500"
-                  : "border-zinc-300 dark:border-zinc-600 focus:ring-blue-500"
+                  : "border-zinc-300 dark:border-green-800 focus:ring-green-500"
               }`}
               placeholder="Motivo de tu consulta"
             />
@@ -362,9 +362,9 @@ export default function ContactoPage() {
           <div>
             <label
               htmlFor="mensaje"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+              className=" text-sm font-medium text-zinc-700 dark:text-green-400 mb-1"
             >
-              Mensaje *
+              Mensaje:
             </label>
             <textarea
               id="mensaje"
@@ -373,10 +373,10 @@ export default function ContactoPage() {
               onChange={handleChange}
               maxLength={2000}
               rows={5}
-              className={`w-full p-3 rounded-lg border bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 transition resize-vertical ${
+              className={`w-full p-3 rounded-lg border bg-white dark:bg-zinc-800 text-zinc-900 dark:text-green-400 focus:outline-none focus:ring-2 transition resize-vertical ${
                 errors.mensaje
                   ? "border-red-500 focus:ring-red-500"
-                  : "border-zinc-300 dark:border-zinc-600 focus:ring-blue-500"
+                  : "border-zinc-300 dark:border-green-800 focus:ring-green-500"
               }`}
               placeholder="Escribe tu mensaje aquí (mín. 30 caracteres, 5 palabras)"
             />
@@ -389,12 +389,12 @@ export default function ContactoPage() {
                   (contacto.mensaje.trim().length > 0 &&
                     contacto.mensaje.trim().length < 30)
                     ? "text-red-600 dark:text-red-400 font-medium"
-                    : "text-zinc-500 dark:text-zinc-400"
+                    : "text-zinc-500 dark:text-green-400"
                 }`}
               >
                 {contacto.mensaje.length}/2000 caracteres
               </span>
-              <span className="text-xs text-zinc-400">
+              <span className="text-xs text-zinc-400 dark:text-green-400">
                 {contacto.mensaje.trim() === ""
                   ? "0 palabras"
                   : `${
@@ -413,32 +413,47 @@ export default function ContactoPage() {
             )}
           </div>
 
-          {/* Botón de envío */}
+          {/* Botón de envío CON ICONO HEROICON */}
           <button
             type="submit"
             disabled={enviando}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold py-3 rounded-lg transition disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold py-3 px-4 rounded-lg transition disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
+            {/* Icono de envío (Heroicon: Paper Airplane) */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
+              />
+            </svg>
             {enviando ? "Enviando..." : "Enviar mensaje"}
           </button>
         </form>
 
         {/* INFORMACIÓN ADICIONAL DE CONTACTO */}
-        <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-700 text-center">
+        <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-green-900 text-center">
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             También puedes contactarnos directamente en:{" "}
-            <span className="font-extrabold font-xl font-sans text-zinc-600 dark:text-white">
+            <span className="font-extrabold font-xl font-sans text-zinc-600 dark:text-green-400">
               contacto@tienda.es
             </span>
           </p>
         </div>
 
         {/* MAPA DE UBICACIÓN */}
-        <div className="mt-8 pt-8 border-t border-zinc-200 dark:border-zinc-700">
-          <h2 className="text-2xl font-bold text-center text-zinc-900 dark:text-white mb-6">
+        <div className="mt-8 pt-8 border-t border-zinc-200 dark:border-green-900">
+          <h2 className="text-2xl font-bold text-center text-zinc-900 dark:text-green-400 mb-6">
             Nuestra Ubicación
           </h2>
-          <div className="w-full h-80 rounded-xl overflow-hidden shadow-lg border border-zinc-200 dark:border-zinc-700">
+          <div className="w-full h-80 rounded-xl overflow-hidden shadow-lg border border-zinc-200 dark:border-green-900">
             <iframe
               src="https://maps.google.com/maps?q=40.029889,-6.090175&hl=es&z=15&output=embed"
               width="100%"
